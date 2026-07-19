@@ -1,0 +1,10 @@
+python-telegram-bot[job-queue]>=20.0
+python-dotenv
+aiosqlite
+groq
+google-generativeai
+duckduckgo-search
+PyPDF2
+python-docx
+openpyxl
+pillow
