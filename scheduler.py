@@ -105,7 +105,10 @@ async def task_reminder_callback(context):
             time_str = task.get('due_time', 'soon')
             await context.bot.send_message(
                 chat_id,
-                f"⏰ *Reminder* \n\n📌 {task['title']}\n🕐 Due at {time_str}",
+                f"⏰ *Reminder* 
+
+📌 {task['title']}
+🕐 Due at {time_str}",
                 parse_mode="Markdown"
             )
         except Exception as e:
@@ -127,28 +130,63 @@ async def research_callback(context):
     job_id = await save_research_job(user['id'], query)
 
     try:
-        # Notify that research started
+        # Notify that research started - FIXED: removed stray backslash
         await context.bot.send_message(
             chat_id,
-            f"🔍 *Research started:* \{query}\n\nI'll message you when it's ready...",
+            f"🔍 *Research started:* {query}
+
+I'll message you when it's ready...",
             parse_mode="Markdown"
         )
 
         # Do the research
         results = await search_web(query, max_results=8)
+
+        if not results:
+            await context.bot.send_message(
+                chat_id,
+                f"⚠️ *Research Issue*
+
+I couldn't find any web results for '{query}'.
+
+"
+                f"This might be because:
+"
+                f"• The search service is temporarily busy
+"
+                f"• The query is too specific
+
+"
+                f"Try rephrasing your request or try again in a few minutes.",
+                parse_mode="Markdown"
+            )
+            await complete_research_job(job_id, "No results found")
+            return
+
         summary = await summarize_research(query, results)
 
         # Save and send results
         await complete_research_job(job_id, summary)
 
+        # Escape any problematic markdown characters
+        safe_summary = summary.replace("*", "\*").replace("_", "\_").replace("[", "\[").replace("]", "\]")[:3800]
+
         await context.bot.send_message(
             chat_id,
-            f"📊 *Research Complete*\n\n{summary}",
+            f"📊 *Research Complete*
+
+{safe_summary}",
             parse_mode="Markdown"
         )
 
     except Exception as e:
+        error_msg = str(e)[:200]
         await context.bot.send_message(
             chat_id,
-            f"❌ Research failed for '{query}'. Error: {str(e)[:200]}"
+            f"❌ Research failed for '{query}'.
+
+Error: {error_msg}
+
+"
+            f"Please try again or rephrase your query."
         )

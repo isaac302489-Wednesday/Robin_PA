@@ -41,7 +41,8 @@ User message: {text}"""
 
 async def generate_morning_briefing(user: dict, tasks: list):
     """Create your morning briefing"""
-    task_text = "\n".join([f"- {t['title']} (due: {t.get('due_time', 'anytime')})" for t in tasks]) if tasks else "No tasks scheduled for today."
+    task_text = "
+".join([f"- {t['title']} (due: {t.get('due_time', 'anytime')})" for t in tasks]) if tasks else "No tasks scheduled for today."
 
     prompt = f"""You are a warm, proactive personal assistant. Create a morning briefing.
 
@@ -65,11 +66,17 @@ Keep it under 300 words."""
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"☀️ Good morning!\n\n📋 Today's tasks:\n{task_text}\n\nHave a productive day! 💪"
+        return f"☀️ Good morning!
+
+📋 Today's tasks:
+{task_text}
+
+Have a productive day! 💪"
 
 async def generate_evening_briefing(user: dict, tasks: list):
     """Create your evening wrap-up"""
-    task_text = "\n".join([f"- {t['title']}" for t in tasks]) if tasks else "No remaining tasks for today."
+    task_text = "
+".join([f"- {t['title']}" for t in tasks]) if tasks else "No remaining tasks for today."
 
     prompt = f"""You are a personal assistant. Create an evening wrap-up.
 
@@ -92,7 +99,12 @@ Keep it warm and under 200 words."""
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"🌙 Evening wrap-up\n\nPending tasks:\n{task_text}\n\nGreat work today! Rest well. 😊"
+        return f"🌙 Evening wrap-up
+
+Pending tasks:
+{task_text}
+
+Great work today! Rest well. 😊"
 
 async def transcribe_voice(audio_path: str):
     """Convert voice messages to text using free Whisper API"""
@@ -127,10 +139,22 @@ async def describe_image(image_path: str, caption: str = ""):
 
 async def summarize_research(query: str, search_results: list):
     """Summarize web research findings"""
-    results_text = "\n\n".join([
-        f"Source: {r.get('title', 'Unknown')}\n{r.get('snippet', '')}\nURL: {r.get('url', '')}"
-        for r in search_results
+
+    # Handle empty results
+    if not search_results:
+        return "I couldn't find any web results for this query. The search service may be temporarily unavailable. Please try again later or rephrase your question."
+
+    results_text = "
+
+".join([
+        f"Source: {r.get('title', 'Unknown')}
+{r.get('snippet', '')}
+URL: {r.get('url', '')}"
+        for r in search_results if r.get('snippet') or r.get('title')
     ])
+
+    if not results_text.strip():
+        return "The search returned results but with no readable content. This sometimes happens with certain queries. Try a more general or differently worded question."
 
     prompt = f"""Research query: {query}
 
@@ -153,7 +177,11 @@ Keep under 400 words."""
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"Research on '{query}':\n\n{results_text[:1000]}..."
+        # Fallback: return raw search results if AI summarization fails
+        fallback = f"Here is what I found (raw results):
+
+{results_text[:2000]}"
+        return fallback
 
 async def process_general_message(text: str, context: str = ""):
     """Handle any general message naturally"""
